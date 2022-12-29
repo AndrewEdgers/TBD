@@ -143,3 +143,5 @@ cython_debug/
 # SQLITE database
 *.db
 
+# Sensetive files
+config.json
