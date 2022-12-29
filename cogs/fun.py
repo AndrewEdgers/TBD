@@ -64,7 +64,7 @@ class RockPaperScissors(discord.ui.Select):
         bot_choice = random.choice(list(choices.keys()))
         bot_choice_index = choices[bot_choice]
 
-        result_embed = discord.Embed(color=0x9C84EF)
+        result_embed = discord.Embed(color=0x6930C3)
         result_embed.set_author(
             name=interaction.user.name,
             icon_url=interaction.user.avatar.url
@@ -75,13 +75,13 @@ class RockPaperScissors(discord.ui.Select):
             result_embed.colour = 0xF59E42
         elif user_choice_index == 0 and bot_choice_index == 2:
             result_embed.description = f"**You won!**\nYou've chosen {user_choice} and I've chosen {bot_choice}."
-            result_embed.colour = 0x9C84EF
+            result_embed.colour = 0x6930C3
         elif user_choice_index == 1 and bot_choice_index == 0:
             result_embed.description = f"**You won!**\nYou've chosen {user_choice} and I've chosen {bot_choice}."
-            result_embed.colour = 0x9C84EF
+            result_embed.colour = 0x6930C3
         elif user_choice_index == 2 and bot_choice_index == 1:
             result_embed.description = f"**You won!**\nYou've chosen {user_choice} and I've chosen {bot_choice}."
-            result_embed.colour = 0x9C84EF
+            result_embed.colour = 0x6930C3
         else:
             result_embed.description = f"**I won!**\nYou've chosen {user_choice} and I've chosen {bot_choice}."
             result_embed.colour = 0xE02B2B
@@ -167,7 +167,7 @@ class Fun(commands.Cog, name="fun"):
         buttons = Choice()
         embed = discord.Embed(
             description="What is your bet?",
-            color=0x9C84EF
+            color=0x6930C3
         )
         message = await context.send(embed=embed, view=buttons)
         await buttons.wait()  # We wait for the user to click a button.
@@ -175,7 +175,7 @@ class Fun(commands.Cog, name="fun"):
         if buttons.value == result:
             embed = discord.Embed(
                 description=f"Correct! You guessed `{buttons.value}` and I flipped the coin to `{result}`.",
-                color=0x9C84EF
+                color=0x6930C3
             )
         else:
             embed = discord.Embed(

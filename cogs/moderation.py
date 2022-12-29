@@ -47,7 +47,7 @@ class Moderation(commands.Cog, name="moderation"):
                 embed = discord.Embed(
                     title="User Kicked!",
                     description=f"**{member}** was kicked by **{context.author}**!",
-                    color=0x9C84EF
+                    color=0x6930C3
                 )
                 embed.add_field(
                     name="Reason:",
@@ -92,7 +92,7 @@ class Moderation(commands.Cog, name="moderation"):
             embed = discord.Embed(
                 title="Changed Nickname!",
                 description=f"**{member}'s** new nickname is **{nickname}**!",
-                color=0x9C84EF
+                color=0x6930C3
             )
             await context.send(embed=embed)
         except:
@@ -132,7 +132,7 @@ class Moderation(commands.Cog, name="moderation"):
                 embed = discord.Embed(
                     title="User Banned!",
                     description=f"**{member}** was banned by **{context.author}**!",
-                    color=0x9C84EF
+                    color=0x6930C3
                 )
                 embed.add_field(
                     name="Reason:",
@@ -194,7 +194,7 @@ class Moderation(commands.Cog, name="moderation"):
         embed = discord.Embed(
             title="User Warned!",
             description=f"**{member}** was warned by **{context.author}**!\nTotal warns for this user: {total}",
-            color=0x9C84EF
+            color=0x6930C3
         )
         embed.add_field(
             name="Reason:",
@@ -227,7 +227,7 @@ class Moderation(commands.Cog, name="moderation"):
         embed = discord.Embed(
             title="User Warn Removed!",
             description=f"I've removed the warning **#{warn_id}** from **{member}**!\nTotal warns for this user: {total}",
-            color=0x9C84EF
+            color=0x6930C3
         )
         await context.send(embed=embed)
 
@@ -248,7 +248,7 @@ class Moderation(commands.Cog, name="moderation"):
         warnings_list = await db_manager.get_warnings(user.id, context.guild.id)
         embed = discord.Embed(
             title=f"Warnings of {user}",
-            color=0x9C84EF
+            color=0x6930C3
         )
         description = ""
         if len(warnings_list) == 0:
@@ -279,7 +279,7 @@ class Moderation(commands.Cog, name="moderation"):
         embed = discord.Embed(
             title="Chat Cleared!",
             description=f"**{context.author}** cleared **{len(purged_messages)-1}** messages!",
-            color=0x9C84EF
+            color=0x6930C3
         )
         await context.channel.send(embed=embed)
 
@@ -305,7 +305,7 @@ class Moderation(commands.Cog, name="moderation"):
             embed = discord.Embed(
                 title="User Banned!",
                 description=f"**{user} (ID: {user_id}) ** was banned by **{context.author}**!",
-                color=0x9C84EF
+                color=0x6930C3
             )
             embed.add_field(
                 name="Reason:",

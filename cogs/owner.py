@@ -37,7 +37,7 @@ class Owner(commands.Cog, name="owner"):
             embed = discord.Embed(
                 title="Slash Commands Sync",
                 description="Slash commands have been globally synchronized.",
-                color=0x9C84EF
+                color=0x6930C3
             )
             await context.send(embed=embed)
             return
@@ -47,7 +47,7 @@ class Owner(commands.Cog, name="owner"):
             embed = discord.Embed(
                 title="Slash Commands Sync",
                 description="Slash commands have been synchronized in this guild.",
-                color=0x9C84EF
+                color=0x6930C3
             )
             await context.send(embed=embed)
             return
@@ -78,7 +78,7 @@ class Owner(commands.Cog, name="owner"):
             embed = discord.Embed(
                 title="Slash Commands Unsync",
                 description="Slash commands have been globally unsynchronized.",
-                color=0x9C84EF
+                color=0x6930C3
             )
             await context.send(embed=embed)
             return
@@ -88,7 +88,7 @@ class Owner(commands.Cog, name="owner"):
             embed = discord.Embed(
                 title="Slash Commands Unsync",
                 description="Slash commands have been unsynchronized in this guild.",
-                color=0x9C84EF
+                color=0x6930C3
             )
             await context.send(embed=embed)
             return
@@ -125,7 +125,7 @@ class Owner(commands.Cog, name="owner"):
         embed = discord.Embed(
             title="Load",
             description=f"Successfully loaded the `{cog}` cog.",
-            color=0x9C84EF
+            color=0x6930C3
         )
         await context.send(embed=embed)
 
@@ -155,7 +155,7 @@ class Owner(commands.Cog, name="owner"):
         embed = discord.Embed(
             title="Unload",
             description=f"Successfully unloaded the `{cog}` cog.",
-            color=0x9C84EF
+            color=0x6930C3
         )
         await context.send(embed=embed)
 
@@ -185,7 +185,7 @@ class Owner(commands.Cog, name="owner"):
         embed = discord.Embed(
             title="Reload",
             description=f"Successfully reloaded the `{cog}` cog.",
-            color=0x9C84EF
+            color=0x6930C3
         )
         await context.send(embed=embed)
 
@@ -202,7 +202,7 @@ class Owner(commands.Cog, name="owner"):
         """
         embed = discord.Embed(
             description="Shutting down. Bye! :wave:",
-            color=0x9C84EF
+            color=0x6930C3
         )
         await context.send(embed=embed)
         await self.bot.close()
@@ -237,7 +237,7 @@ class Owner(commands.Cog, name="owner"):
         """
         embed = discord.Embed(
             description=message,
-            color=0x9C84EF
+            color=0x6930C3
         )
         await context.send(embed=embed)
 
@@ -279,7 +279,7 @@ class Owner(commands.Cog, name="owner"):
             embed = discord.Embed(
                 title="Blacklist",
                 description="There are no blacklisted users.",
-                color=0x9C84EF
+                color=0x6930C3
             )
             await context.send(embed=embed)
             return
@@ -288,7 +288,7 @@ class Owner(commands.Cog, name="owner"):
             title="Blacklist",
             description="Here is the list of all blacklisted users.",
 
-            color=0x9C84EF
+            color=0x6930C3
         )
         for user in blacklist:
             embed.add_field(
@@ -325,7 +325,7 @@ class Owner(commands.Cog, name="owner"):
         embed = discord.Embed(
             title="User Blacklisted",
             description=f"**{user.name}** has been successfully added to the blacklist",
-            color=0x9C84EF
+            color=0x6930C3
         )
         embed.set_footer(
             text=f"There are now {total} {'user' if total == 1 else 'users'} in the blacklist"
@@ -359,7 +359,7 @@ class Owner(commands.Cog, name="owner"):
         embed = discord.Embed(
             title="User removed from blacklist",
             description=f"**{user.name}** has been successfully removed from the blacklist",
-            color=0x9C84EF
+            color=0x6930C3
         )
         embed.set_footer(
             text=f"There are now {total} {'user' if total == 1 else 'users'} in the blacklist"
