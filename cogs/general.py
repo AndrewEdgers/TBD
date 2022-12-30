@@ -7,11 +7,8 @@ Version: 5.4.1
 """
 
 import platform
-import random
 
-import aiohttp
 import discord
-from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -43,11 +40,30 @@ class General(commands.Cog, name="general"):
                 embed.add_field(name=i.capitalize(),
                                 value=f'```{help_text}```', inline=False)
             await context.send(embed=embed)
+        # check if user has permission to manage channels
+        elif context.author.guild_permissions.manage_channels:
+            embed = discord.Embed(
+                title="Help", description="List of available commands:", color=0x6930C3)
+            for i in self.bot.cogs:
+                if i.lower() == "owner":
+                    continue
+                cog = self.bot.get_cog(i.lower())
+                commands = cog.get_commands()
+                data = []
+                for command in commands:
+                    description = command.description.partition('\n')[0]
+                    data.append(f"{prefix}{command.name} - {description}")
+                help_text = "\n".join(data)
+                embed.add_field(name=i.capitalize(),
+                                value=f'```{help_text}```', inline=False)
+            await context.send(embed=embed)
         else:
             embed = discord.Embed(
                 title="Help", description="List of available commands:", color=0x6930C3)
             for i in self.bot.cogs:
                 if i.lower() == "owner":
+                    continue
+                if i.lower() == "moderation":
                     continue
                 cog = self.bot.get_cog(i.lower())
                 commands = cog.get_commands()

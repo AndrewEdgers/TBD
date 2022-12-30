@@ -27,3 +27,13 @@ class UserNotOwner(commands.CheckFailure):
     def __init__(self, message="User is not an owner of the bot!"):
         self.message = message
         super().__init__(self.message)
+
+
+class NotEnoughTokens(commands.CheckFailure):
+    """
+    Thrown when a user is attempting something, but does not have enough Tokens.
+    """
+
+    def __init__(self, message="Not enough Tokens!"):
+        self.message = message
+        super().__init__(self.message)

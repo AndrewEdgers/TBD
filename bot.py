@@ -19,6 +19,7 @@ from discord.ext import commands, tasks
 from discord.ext.commands import Bot, Context
 
 import exceptions
+from helpers.db_manager import get_level, add_level, add_balance, get_xp, add_xp, get_balance
 
 if not os.path.isfile(f"{os.path.realpath(os.path.dirname(__file__))}/config.json"):
     sys.exit("'config.json' not found! Please add it and try again.")
@@ -26,38 +27,7 @@ else:
     with open(f"{os.path.realpath(os.path.dirname(__file__))}/config.json") as file:
         config = json.load(file)
 
-"""	
-Setup bot intents (events restrictions)
-For more information about intents, please go to the following websites:
-https://discordpy.readthedocs.io/en/latest/intents.html
-https://discordpy.readthedocs.io/en/latest/intents.html#privileged-intents
-
-
-Default Intents:
-intents.bans = True
-intents.dm_messages = True
-intents.dm_reactions = True
-intents.dm_typing = True
-intents.emojis = True
-intents.emojis_and_stickers = True
-intents.guild_messages = True
-intents.guild_reactions = True
-intents.guild_scheduled_events = True
-intents.guild_typing = True
-intents.guilds = True
-intents.integrations = True
-intents.invites = True
-intents.messages = True # `message_content` is required to get the content of the messages
-intents.reactions = True
-intents.typing = True
-intents.voice_states = True
-intents.webhooks = True
-
-Privileged Intents (Needs to be enabled on developer portal of Discord), please use them only if you need them:
-intents.members = True
-intents.message_content = True
-intents.presences = True
-"""
+DATABASE_PATH = f"{os.path.realpath(os.path.dirname(__file__))}/../database/database.db"
 
 intents = discord.Intents.all()
 
@@ -101,9 +71,9 @@ async def on_ready() -> None:
 @tasks.loop(minutes=1.0)
 async def status_task() -> None:
     """
-    Setup the game status task of the bot
+    Set up the game status task of the bot
     """
-    statuses = ["", "", ""]
+    statuses = ["Making developer", "Raising error", "Deleting user database..."]
     await bot.change_presence(activity=discord.Game(random.choice(statuses)))
 
 
@@ -117,6 +87,81 @@ async def on_message(message: discord.Message) -> None:
     if message.author == bot.user or message.author.bot:
         return
     await bot.process_commands(message)
+    author = message.author
+    guild = message.guild
+    context = await bot.get_context(message)
+    async with aiosqlite.connect("database/database.db"):
+        if any(role.id == 1057365599522652221 for role in author.roles):  # Gold
+            xp = random.randint(1, 25) * 1.75
+        elif any(role.id == 1057365535748272248 or 1057346657315991592 for role in author.roles):  # Silver and Booster
+            xp = random.randint(1, 25) * 1.5
+        elif any(role.id == 1057365194315137057 for role in author.roles):  # Bronze
+            xp = random.randint(1, 25) * 1.25
+        elif any(role.id == 1057346908286373938  # Donor
+                 or 1057346904821866666
+                 or 1057346901348982914
+                 or 1057346896080937020
+                 or 1057346882860498974
+                 or 1057346875293958196
+                 or 1057346686005031073
+                 or 1057346862870429726
+                 for role in author.roles):
+            xp = random.randint(1, 25) * 1.1
+        else:
+            xp = random.randint(1, 25)
+
+        current_xp = await get_xp(author.id, guild.id)
+        current_level = await get_level(author.id, guild.id)
+        if current_level == 0:
+            xp_req = 100
+        else:
+            xp_req = (current_level / 0.07) ** 2
+        if current_xp + xp >= xp_req:
+            embed = discord.Embed(
+                title="Level up!",
+                description=f"{author.mention} has leveled up to level {current_level + 1}!\nHere's a **1** Token!",
+                color=0x6930C3
+            )
+            await add_level(author.id, guild.id, 1)
+            current_level += 1
+            if current_level == 1:
+                new_role = discord.utils.get(context.guild.roles, name="Lv 1+")
+                await context.author.add_roles(new_role)
+            elif current_level == 5:
+                old_role = discord.utils.get(context.guild.roles, name="Lv 1+")
+                new_role = discord.utils.get(context.guild.roles, name="Lv 5+")
+                await context.author.remove_roles(old_role)
+                await context.author.add_roles(new_role)
+            elif current_level == 10:
+                old_role = discord.utils.get(context.guild.roles, name="Lv 5+")
+                new_role = discord.utils.get(context.guild.roles, name="Lv 10+")
+                await context.author.remove_roles(old_role)
+                await context.author.add_roles(new_role)
+            elif current_level == 15:
+                old_role = discord.utils.get(context.guild.roles, name="Lv 10+")
+                new_role = discord.utils.get(context.guild.roles, name="Lv 15+")
+                await context.author.remove_roles(old_role)
+                await context.author.add_roles(new_role)
+            elif current_level == 25:
+                old_role = discord.utils.get(context.guild.roles, name="Lv 15+")
+                new_role = discord.utils.get(context.guild.roles, name="Lv 25+")
+                await context.author.remove_roles(old_role)
+                await context.author.add_roles(new_role)
+            elif current_level == 50:
+                old_role = discord.utils.get(context.guild.roles, name="Lv 25+")
+                new_role = discord.utils.get(context.guild.roles, name="Lv 50+")
+                await context.author.remove_roles(old_role)
+                await context.author.add_roles(new_role)
+            elif current_level == 100:
+                old_role = discord.utils.get(context.guild.roles, name="Lv 50+")
+                new_role = discord.utils.get(context.guild.roles, name="Lv 100+")
+                await context.author.remove_roles(old_role)
+                await context.author.add_roles(new_role)
+            await add_xp(author.id, guild.id, xp)
+            await add_balance(author.id, guild.id, 1)
+            await message.channel.send(embed=embed)
+        else:
+            await add_xp(author.id, guild.id, xp)
 
 
 @bot.event

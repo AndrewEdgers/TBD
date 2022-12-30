@@ -1,4 +1,4 @@
-# Python Discord Bot Template
+# Python Discord Bot Interaction
 
 <p align="center">
   <a href="//discord.gg/mTBrXyWxAF"><img src="https://img.shields.io/discord/739934735387721768?logo=discord"></a>
