@@ -87,7 +87,9 @@ class General(commands.Cog, name="general"):
 
         :param context: The hybrid command context.
         """
+        guild = self.bot.get_guild(1057268363929333800)
         embed = discord.Embed(
+            title=f"Developed for {guild} server",
             description="Used [Krypton's](https://krypton.ninja) template",
             color=0x6930C3
         )
@@ -96,7 +98,7 @@ class General(commands.Cog, name="general"):
         )
         embed.add_field(
             name="Owner:",
-            value="Krypton#7331",
+            value="Edgers#2088",
             inline=True
         )
         embed.add_field(
@@ -110,7 +112,8 @@ class General(commands.Cog, name="general"):
             inline=False
         )
         embed.set_footer(
-            text=f"Requested by {context.author}"
+
+            text=f"Created: {self.bot.user.created_at.strftime('%d/%m/%Y %H:%M %p')}"
         )
         await context.send(embed=embed)
 
@@ -125,16 +128,14 @@ class General(commands.Cog, name="general"):
 
         :param context: The hybrid command context.
         """
-        roles = [role.name for role in context.guild.roles]
-        if len(roles) > 50:
-            roles = roles[:50]
-            roles.append(f">>>> Displaying[50/{len(roles)}] Roles")
-        roles = ", ".join(roles)
 
         embed = discord.Embed(
-            title="**Server Name:**",
-            description=f"{context.guild}",
+            title=f"**{context.guild}**",
+            description="About:",
             color=0x6930C3
+        )
+        embed.set_author(
+            name="Server Information"
         )
         if context.guild.icon is not None:
             embed.set_thumbnail(
@@ -145,19 +146,27 @@ class General(commands.Cog, name="general"):
             value=context.guild.id
         )
         embed.add_field(
+            name="Server Owner",
+            value=context.guild.owner
+        )
+        embed.add_field(
             name="Member Count",
             value=context.guild.member_count
         )
         embed.add_field(
-            name="Text/Voice Channels",
-            value=f"{len(context.guild.channels)}"
+            name="Text Channels",
+            value=f"{len(context.guild.text_channels)}"
         )
         embed.add_field(
-            name=f"Roles ({len(context.guild.roles)})",
-            value=roles
+            name="Voice Channels",
+            value=f"{len(context.guild.voice_channels)}"
+        )
+        embed.add_field(
+            name=f"Roles",
+            value=f"{len(context.guild.roles)}"
         )
         embed.set_footer(
-            text=f"Created at: {context.guild.created_at}"
+            text=f"Created at: {context.guild.created_at.strftime('%d/%m/%Y %H:%M %p')}"
         )
         await context.send(embed=embed)
 

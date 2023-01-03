@@ -339,3 +339,217 @@ async def get_leaderboard(server_id: int, limit: int = 10) -> list:
         async with rows as cursor:
             result = await cursor.fetchall()
             return result if result is not None else []
+
+
+async def add_giveaway(giveaway_id: int, channel_id: int, guild_id: int, prize: str, time: int, winners: int,
+                       provider: str, message: str, finished: bool) -> None:
+    """
+    This function will add a giveaway to the database.
+
+    :param giveaway_id: The ID of the giveaway.
+    :param channel_id: The ID of the channel that the giveaway is in.
+    :param guild_id: The ID of the guild that the giveaway is in.
+    :param prize: The prize of the giveaway.
+    :param time: The duration of the giveaway.
+    :param winners: The amount of winners of the giveaway.
+    :param provider: The provider the giveaway.
+    :param message: The description of the giveaway.
+    :param finished: If the giveaway is finished.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute(
+            "INSERT INTO giveaways(giveaway_id, channel_id, guild_id, prize, time, winners, provider, message, finished) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (giveaway_id, channel_id, guild_id, prize, time, winners, provider, message, finished,))
+        await db.commit()
+
+
+async def add_participants(giveaway_id: int, user_id: int, entry: int) -> None:
+    """
+    This function will add a participant to a giveaway.
+
+    :param giveaway_id: The ID of the giveaway.
+    :param user_id: The ID of the user that should be added.
+    :param entry: The amount of entries the user has.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("INSERT INTO participants(giveaway_id, user_id, entry) VALUES (?, ?, ?)",
+                         (giveaway_id, user_id, entry))
+        await db.commit()
+
+
+async def get_participants(giveaway_id: int) -> list:
+    """
+    This function will get the participants of a giveaway.
+
+    :param giveaway_id: The ID of the giveaway.
+    :return: A list of participants.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT user_id FROM participants WHERE giveaway_id=?", (giveaway_id,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return result if result is not None else []
+
+
+async def get_giveaways() -> list:
+    """
+    This function will get all giveaways from the database.
+
+    :return: A list of giveaways.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT * FROM giveaways")
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return result if result is not None else []
+
+
+# get giveaway by id
+async def get_giveaway(giveaway_id: int) -> list:
+    """
+    This function will get a giveaway from the database.
+
+    :param giveaway_id: The ID of the giveaway.
+    :return: A list of giveaways.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT * FROM giveaways WHERE giveaway_id=?", (giveaway_id,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return result if result is not None else []
+
+
+async def get_guild_id(giveaway_id: int) -> int:
+    """
+    This function will get the guild ID of a giveaway.
+
+    :param giveaway_id: The ID of the giveaway.
+    :return: The guild ID of the giveaway.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT guild_id FROM giveaways WHERE giveaway_id=?", (giveaway_id,))
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] if result is not None else 0
+
+
+async def is_in_giveaway(giveaway_id: int, user_id: int) -> bool:
+    """
+    This function will check if a user is in a giveaway.
+
+    :param giveaway_id: The ID of the giveaway.
+    :param user_id: The ID of the user that should be checked.
+    :return: If the user is in the giveaway.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT user_id FROM participants WHERE giveaway_id=? AND user_id=?",
+                                (giveaway_id, user_id,))
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result is not None
+
+
+async def is_finished(giveaway_id: int) -> bool:
+    """
+    This function will check if a giveaway is finished.
+
+    :param giveaway_id: The ID of the giveaway.
+    :return: If the giveaway is finished.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT finished FROM giveaways WHERE giveaway_id=?", (giveaway_id,))
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result is not None
+
+
+async def finish_giveaway(giveaway_id: int) -> None:
+    """
+    This function will finish a giveaway.
+
+    :param giveaway_id: The ID of the giveaway.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("UPDATE giveaways SET finished=? WHERE giveaway_id=?", (1, giveaway_id,))
+        await db.commit()
+
+
+async def reroll(giveaway_id: int) -> None:
+    """
+    This function will reroll a giveaway.
+
+    :param giveaway_id: The ID of the giveaway.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("UPDATE participants SET is_winner=? WHERE giveaway_id=?", (False, giveaway_id,))
+        await db.commit()
+
+
+async def get_winners(giveaway_id: int) -> list:
+    """
+    This function will get the winners of a giveaway.
+
+    :param giveaway_id: The ID of the giveaway.
+    :return: A list of winners.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT user_id FROM participants WHERE giveaway_id=?", (giveaway_id,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return result if result is not None else []
+
+
+async def set_winner(giveaway_id: int, user_id: int) -> None:
+    """
+    This function will set a winner for a giveaway.
+
+    :param giveaway_id: The ID of the giveaway.
+    :param user_id: The ID of the user that should be set as winner.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("UPDATE participants SET is_winner=? WHERE giveaway_id=? AND user_id=?",
+                         (1, giveaway_id, user_id))
+        await db.commit()
+
+
+async def get_provider(giveaway_id: int) -> int:
+    """
+    This function will get the provider of a giveaway.
+
+    :param giveaway_id: The ID of the giveaway.
+    :return: The provider of the giveaway.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT provider FROM giveaways WHERE giveaway_id=?", (giveaway_id,))
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] if result is not None else []
+
+
+async def drop_giveaways_table() -> None:
+    """
+    This function will drop the giveaways table.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("DROP TABLE giveaways")
+        await db.commit()
+    with open("schema.sql", "r") as f:
+        schema = f.read()
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.executescript(schema)
+        await db.commit()
+
+
+async def drop_participants_table() -> None:
+    """
+    This function will drop the participants table.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("DROP TABLE participants")
+        await db.commit()
+        with open("schema.sql", "r") as f:
+            schema = f.read()
+        async with aiosqlite.connect(DATABASE_PATH) as db:
+            await db.executescript(schema)
+            await db.commit()

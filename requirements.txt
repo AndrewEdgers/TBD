@@ -1,3 +1,6 @@
-aiohttp
-aiosqlite
+aiohttp~=3.8.3
+aiosqlite~=0.18.0
 discord.py
+
+discord~=2.1.0
+humanfriendly~=10.0

@@ -366,6 +366,81 @@ class Owner(commands.Cog, name="owner"):
         )
         await context.send(embed=embed)
 
+    @commands.hybrid_group(
+        name="drop",
+        description="Drop a database table.",
+    )
+    @checks.is_owner()
+    async def drop(self, context: Context) -> None:
+        """
+        Lets you drop a database table.
+
+        :param context: The hybrid command context.
+        """
+        if context.invoked_subcommand is None:
+            embed = discord.Embed(
+                title="Drop",
+                description="You need to specify a subcommand.\n\n**Subcommands:**\n`giveaways` - Drop the giveaways table.\n`participants` - Drop the participants table.",
+                color=0xE02B2B
+            )
+            await context.send(embed=embed)
+
+    @drop.command(
+        base="drop",
+        name="giveaways",
+        description="Drop the giveaways table.",
+    )
+    @checks.is_owner()
+    async def drop_giveaways(self, context: Context) -> None:
+        """
+        Drop the giveaways table.
+
+        :param context: The hybrid command context.
+        """
+        try:
+            await db_manager.drop_giveaways_table()
+            embed = discord.Embed(
+                title="Table dropped",
+                description="The giveaways table has been successfully dropped.",
+                color=0x6930C3
+            )
+            await context.send(embed=embed)
+        except aiosqlite.OperationalError:
+            embed = discord.Embed(
+                title="Error!",
+                description="The giveaways table does not exist.",
+                color=0xE02B2B
+            )
+            await context.send(embed=embed)
+
+    @drop.command(
+        base="drop",
+        name="participants",
+        description="Drop the participants table.",
+    )
+    @checks.is_owner()
+    async def drop_participants(self, context: Context) -> None:
+        """
+        Drop the participants table.
+
+        :param context: The hybrid command context.
+        """
+        try:
+            await db_manager.drop_participants_table()
+            embed = discord.Embed(
+                title="Table dropped",
+                description="The participants table has been successfully dropped.",
+                color=0x6930C3
+            )
+            await context.send(embed=embed)
+        except aiosqlite.OperationalError:
+            embed = discord.Embed(
+                title="Error!",
+                description="The participants table does not exist.",
+                color=0xE02B2B
+            )
+            await context.send(embed=embed)
+
 
 async def setup(bot):
     await bot.add_cog(Owner(bot))

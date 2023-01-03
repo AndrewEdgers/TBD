@@ -5,8 +5,11 @@ Description:
 
 Version: 5.4.1
 """
+from math import floor
+
 import aiosqlite
 import discord
+from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -51,20 +54,20 @@ class Interaction(commands.Cog, name="interaction"):
         """
         async with aiosqlite.connect("database/database.db"):
             balance = await db_manager.get_balance(context.author.id, context.guild.id)
-            if balance is None:
+            if balance == 0:
                 embed = discord.Embed(
                     title="Balance",
                     description="You don't have any Tokens yet.",
                     color=0xe08621
                 )
-                await context.send(embed=embed)
+                await context.send(embed=embed, ephemeral=True)
             else:
                 embed = discord.Embed(
                     title="Balance",
                     description=f"You have **{balance}** Tokens.",
                     color=0x6930C3
                 )
-                await context.send(embed=embed)
+                await context.send(embed=embed, ephemeral=True)
 
     @balance.command(
         base="balance",
@@ -72,7 +75,6 @@ class Interaction(commands.Cog, name="interaction"):
         description="Add Tokens to a user."
     )
     @checks.is_owner()
-    @checks.not_blacklisted()
     async def balance_add(self, context: Context, user: discord.Member, amount: int):
         """
         This is a command to add tokens to a user.
@@ -90,12 +92,13 @@ class Interaction(commands.Cog, name="interaction"):
                 description=f"You have added **{amount}** coins to {member.mention}.\n\n{member.mention} now has **{total}** coins.",
                 color=0x6930C3
             )
-            await context.send(embed=embed)
+            await context.send(embed=embed, ephemeral=True)
             try:
                 await member.send(f"You got **{amount}** Tokens!\nYou now have **{total}** Tokens.")
             except:
                 # Couldn't send a message in the private messages of the user
-                await context.send(f"{member.mention}, you got **{amount}** Tokens!\nYou now have **{total}** Tokens.")
+                await context.send(f"{member.mention}, you got **{amount}** Tokens!\nYou now have **{total}** Tokens.",
+                                   ephemeral=True)
 
     @balance.command(
         base="balance",
@@ -103,7 +106,6 @@ class Interaction(commands.Cog, name="interaction"):
         description="Remove Tokens from a user."
     )
     @checks.is_owner()
-    @checks.not_blacklisted()
     async def balance_remove(self, context: Context, user: discord.Member, amount: int):
         """
         This is a command to remove tokens from a user.
@@ -121,21 +123,21 @@ class Interaction(commands.Cog, name="interaction"):
                 description=f"You have removed **{amount}** coins to {member.mention}.\n\n{member.mention} now has **{total}** coins.",
                 color=0x6930C3
             )
-            await context.send(embed=embed)
+            await context.send(embed=embed, ephemeral=True)
             try:
                 await member.send(f"You got **{amount}** Tokens!\nYou now have **{total}** Tokens.")
             except:
                 # Couldn't send a message in the private messages of the user
-                await context.send(f"{member.mention}, you got **{amount}** Tokens!\nYou now have **{total}** Tokens.")
+                await context.send(f"{member.mention}, you got **{amount}** Tokens!\nYou now have **{total}** Tokens.",
+                                   ephemeral=True)
 
     @balance.command(
         base="balance",
-        name="get",
+        name="user",
         description="Get the balance of a specific user."
     )
     @commands.has_permissions(manage_channels=True)
-    @checks.not_blacklisted()
-    async def balance_get(self, context: Context, user: discord.Member):
+    async def balance_user(self, context: Context, user: discord.Member):
         """
         This is a command to get the balance of a specific user.
 
@@ -150,7 +152,7 @@ class Interaction(commands.Cog, name="interaction"):
                 description=f"{member.mention} has **{balance}** Tokens.",
                 color=0x6930C3
             )
-            await context.send(embed=embed)
+            await context.send(embed=embed, ephemeral=True)
 
     @commands.hybrid_command(
         name="level",
@@ -180,8 +182,28 @@ class Interaction(commands.Cog, name="interaction"):
                 )
                 await context.send(embed=embed)
 
-    @commands.hybrid_command(
-        name="xprequired",
+    @commands.hybrid_group(
+        naem="xp",
+        description="Show the amount of XP required to level up."
+    )
+    @checks.not_blacklisted()
+    async def xp(self, context: Context) -> None:
+        """
+        Lets you add or remove a user from not being able to use the bot.
+
+        :param context: The hybrid command context.
+        """
+        if context.invoked_subcommand is None:
+            embed = discord.Embed(
+                title="XP",
+                description="You need to specify a subcommand.\n\n**Subcommands:**\n`required` - Show the amount of XP required to level up.",
+                color=0xE02B2B
+            )
+            await context.send(embed=embed)
+
+    @xp.command(
+        base="xp",
+        name="required",
         description="Show the amount of XP required to level up."
     )
     @checks.not_blacklisted()
@@ -194,21 +216,23 @@ class Interaction(commands.Cog, name="interaction"):
         author = context.author
         guild = context.guild
         async with aiosqlite.connect("database/database.db"):
-            level = await db_manager.get_level(context.author.id, context.guild.id)
-            if level is None:
+            current_level = await db_manager.get_level(context.author.id, context.guild.id)
+            if current_level == 0:
+                current_xp = await get_xp(author.id, guild.id)
+                xp_req = 100 - floor(current_xp)
                 embed = discord.Embed(
                     title="XP Required",
-                    description="You need **100** XP to level up.",
+                    description=f"You need **{xp_req}** XP to level up.",
                     color=0x6930C3
                 )
                 await context.send(embed=embed)
             else:
                 current_level = await get_level(author.id, guild.id)
                 current_xp = await get_xp(author.id, guild.id)
-                xp_req = round(((current_level / 0.07) ** 2) - current_xp)
+                xp_req = floor(((current_level / 0.07) ** 2) - floor(current_xp))
                 embed = discord.Embed(
                     title="XP Required",
-                    description=f"You need {xp_req} XP to level up.",
+                    description=f"You need **{xp_req}** XP to level up.",
                     color=0x6930C3
                 )
                 await context.send(embed=embed)
