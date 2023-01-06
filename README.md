@@ -1,5 +1,13 @@
 # Custom-made Discord bot
 
+<p align="center">
+  <a href="//discord.gg/K3ejWHg6E9"><img src="https://img.shields.io/discord/1057268363929333800?logo=discord"></a>
+  <a href="//github.com/AndrewEdgers/TBD/commits/main"><img src="https://img.shields.io/github/last-commit/AndrewEdgers/TBD"></a>
+  <a href="//github.com/AndrewEdgers/TBD/blob/main/LICENSE.md"><img src="https://img.shields.io/github/license/AndrewEdgers/TBD"></a>
+  <a href="//github.com/AndrewEdgers/TBD"><img src="https://img.shields.io/github/languages/code-size/AndrewEdgers/TBD"></a>
+  <a href="//github.com/AndrewEdgers/TBD/issues"><img src="https://img.shields.io/github/issues-raw/AndrewEdgers/TBD"></a>
+</p>
+
 This is a custom-made Discord bot for the [Discord server](https://discord.gg/K3ejWHg6E9).
 
 ## Features
