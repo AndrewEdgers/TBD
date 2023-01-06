@@ -361,7 +361,7 @@ class Giveaways(commands.Cog, name="giveaways"):
                 winners_list = "No one :("
 
             embed = discord.Embed(
-                title=f"Giveaway has ended.\n**{prize}**",
+                title=f"Giveaway has been ended.\n**{prize}**",
                 description=f"{description}\n**Winner(s):** {winners_list}\n**Provided by:** <@{provider}>",
                 color=0x2f3136
             )
