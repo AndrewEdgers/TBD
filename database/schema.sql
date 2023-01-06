@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `levels`(
 
 CREATE TABLE IF NOT EXISTS `giveaways`(
     `giveaway_id` varchar(20) NOT NULL,
+    `message_id` varchar(20) NOT NULL,
     `channel_id` varchar(20) NOT NULL,
     `guild_id` varchar(20) NOT NULL,
     `prize` varchar(255) NOT NULL,

@@ -341,12 +341,13 @@ async def get_leaderboard(server_id: int, limit: int = 10) -> list:
             return result if result is not None else []
 
 
-async def add_giveaway(giveaway_id: int, channel_id: int, guild_id: int, prize: str, time: int, winners: int,
+async def add_giveaway(giveaway_id: int, message_id: int, channel_id: int, guild_id: int, prize: str, time: int, winners: int,
                        provider: str, message: str, finished: bool) -> None:
     """
     This function will add a giveaway to the database.
 
     :param giveaway_id: The ID of the giveaway.
+    :param message_id: The ID of the message.
     :param channel_id: The ID of the channel that the giveaway is in.
     :param guild_id: The ID of the guild that the giveaway is in.
     :param prize: The prize of the giveaway.
@@ -358,9 +359,9 @@ async def add_giveaway(giveaway_id: int, channel_id: int, guild_id: int, prize: 
     """
     async with aiosqlite.connect(DATABASE_PATH) as db:
         await db.execute(
-            "INSERT INTO giveaways(giveaway_id, channel_id, guild_id, prize, time, winners, provider, message, finished) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (giveaway_id, channel_id, guild_id, prize, time, winners, provider, message, finished,))
+            "INSERT INTO giveaways(giveaway_id, message_id, channel_id, guild_id, prize, time, winners, provider, message, finished) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (giveaway_id, message_id, channel_id, guild_id, prize, time, winners, provider, message, finished,))
         await db.commit()
 
 
@@ -405,7 +406,6 @@ async def get_giveaways() -> list:
             return result if result is not None else []
 
 
-# get giveaway by id
 async def get_giveaway(giveaway_id: int) -> list:
     """
     This function will get a giveaway from the database.
