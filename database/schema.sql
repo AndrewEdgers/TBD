@@ -1,9 +1,9 @@
-CREATE TABLE IF NOT EXISTS `blacklist` (
+create TABLE IF NOT EXISTS `blacklist` (
     `user_id` varchar(20) NOT NULL,
     `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `warns` (
+create TABLE IF NOT EXISTS `warns` (
     `id` int(11) NOT NULL,
     `user_id` varchar(20) NOT NULL,
     `server_id` varchar(20) NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS `warns` (
     `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `economy` (
+create TABLE IF NOT EXISTS `economy` (
     `user_id` varchar(20) NOT NULL,
     `server_id` varchar(20) NOT NULL,
     `balance` int(11) NOT NULL DEFAULT '0'
@@ -20,14 +20,14 @@ CREATE TABLE IF NOT EXISTS `economy` (
 
 
 
-CREATE TABLE IF NOT EXISTS `levels`(
+create TABLE IF NOT EXISTS `levels`(
     `user_id` varchar(20) NOT NULL,
     `server_id` varchar(20) NOT NULL,
     `level` int(11) NOT NULL DEFAULT '0',
     `xp` int(11) NOT NULL DEFAULT '0'
 );
 
-CREATE TABLE IF NOT EXISTS `giveaways`(
+create TABLE IF NOT EXISTS `giveaways`(
     `giveaway_id` varchar(20) NOT NULL,
     `message_id` varchar(20) NOT NULL,
     `channel_id` varchar(20) NOT NULL,
@@ -40,9 +40,33 @@ CREATE TABLE IF NOT EXISTS `giveaways`(
     `finished` BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS `participants`(
+create TABLE IF NOT EXISTS `participants`(
     `giveaway_id` varchar(20) NOT NULL,
     `user_id` varchar(20) NOT NULL,
     `entry` int(11) NOT NULL DEFAULT '0',
     `is_winner` INTEGER DEFAULT 0
 );
+
+create TABLE IF NOT EXISTS `totals`(
+    `guild_id` varchar(20) NOT NULL,
+    `inviter_id` varchar(20) NOT NULL,
+    `normal` int(11) NOT NULL DEFAULT '0',
+    `left` int(11) NOT NULL DEFAULT '0',
+    `fake` int(11) NOT NULL DEFAULT '0',
+    PRIMARY KEY (`guild_id`, `inviter_id`)
+);
+
+create TABLE IF NOT EXISTS `invites`(
+    `guild_id` varchar(20) NOT NULL,
+    `code` varchar(20) NOT NULL,
+    `uses` int(11) NOT NULL DEFAULT '0',
+    PRIMARY KEY (`guild_id`, `code`)
+);
+
+create TABLE IF NOT EXISTS `joined`(
+    `guild_id` varchar(20) NOT NULL,
+    `inviter_id` varchar(20) NOT NULL,
+    `joined_id` varchar(20) NOT NULL,
+    PRIMARY KEY (`guild_id`, `inviter_id`, `joined_id`)
+);
+

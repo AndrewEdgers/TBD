@@ -1,10 +1,3 @@
-""""
-Copyright © Krypton 2019-2022 - https://github.com/kkrypt0nn (https://krypton.ninja)
-Description:
-🐍 A simple template to start to code your own and personalized discord bot in Python programming language.
-
-Version: 5.4.1
-"""
 from math import floor
 
 import aiosqlite
@@ -21,35 +14,14 @@ class Interaction(commands.Cog, name="interaction"):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.hybrid_group(
+    @commands.hybrid_command(
         name="balance",
-        description="Get the balance of a user.",
+        description="Show your current Token balance"
     )
     @checks.not_blacklisted()
-    async def balance(self, context: Context) -> None:
-        """
-        Lets you add or remove a user from not being able to use the bot.
-
-        :param context: The hybrid command context.
-        """
-        if context.invoked_subcommand is None:
-            embed = discord.Embed(
-                title="Balance",
-                description="You need to specify a subcommand.\n\n**Subcommands:**\n`add` - Add a user to the blacklist.\n`remove` - Remove a user from the blacklist.",
-                color=0xE02B2B
-            )
-            await context.send(embed=embed)
-
-    @balance.command(
-        base="balance",
-        name="show",
-        description="Show the balance of a user.",
-    )
-    @checks.not_blacklisted()
-    async def balance_show(self, context: Context):
+    async def balance(self, context: Context):
         """
         This is a command to check your balance.
-
         :param context: The application command context.
         """
         async with aiosqlite.connect("database/database.db"):
@@ -68,91 +40,6 @@ class Interaction(commands.Cog, name="interaction"):
                     color=0x6930C3
                 )
                 await context.send(embed=embed, ephemeral=True)
-
-    @balance.command(
-        base="balance",
-        name="add",
-        description="Add Tokens to a user."
-    )
-    @checks.is_owner()
-    async def balance_add(self, context: Context, user: discord.Member, amount: int):
-        """
-        This is a command to add tokens to a user.
-
-        :param context: The application command context.
-        :param user: The user to add tokens to.
-        :param amount: The amount of tokens to add.
-        """
-        async with aiosqlite.connect("database/database.db"):
-            member = context.guild.get_member(user.id) or await context.guild.fetch_member(user.id)
-            total = await db_manager.add_balance(
-                user.id, context.guild.id, amount)
-            embed = discord.Embed(
-                title="Balance",
-                description=f"You have added **{amount}** coins to {member.mention}.\n\n{member.mention} now has **{total}** coins.",
-                color=0x6930C3
-            )
-            await context.send(embed=embed, ephemeral=True)
-            try:
-                await member.send(f"You got **{amount}** Tokens!\nYou now have **{total}** Tokens.")
-            except:
-                # Couldn't send a message in the private messages of the user
-                await context.send(f"{member.mention}, you got **{amount}** Tokens!\nYou now have **{total}** Tokens.",
-                                   ephemeral=True)
-
-    @balance.command(
-        base="balance",
-        name="remove",
-        description="Remove Tokens from a user."
-    )
-    @checks.is_owner()
-    async def balance_remove(self, context: Context, user: discord.Member, amount: int):
-        """
-        This is a command to remove tokens from a user.
-
-        :param context: The application command context.
-        :param user: The user to remove tokens from.
-        :param amount: The amount of tokens to remove.
-        """
-        async with aiosqlite.connect("database/database.db"):
-            member = context.guild.get_member(user.id) or await context.guild.fetch_member(user.id)
-            total = await db_manager.remove_balance(
-                user.id, context.guild.id, amount)
-            embed = discord.Embed(
-                title="Balance",
-                description=f"You have removed **{amount}** coins to {member.mention}.\n\n{member.mention} now has **{total}** coins.",
-                color=0x6930C3
-            )
-            await context.send(embed=embed, ephemeral=True)
-            try:
-                await member.send(f"You got **{amount}** Tokens!\nYou now have **{total}** Tokens.")
-            except:
-                # Couldn't send a message in the private messages of the user
-                await context.send(f"{member.mention}, you got **{amount}** Tokens!\nYou now have **{total}** Tokens.",
-                                   ephemeral=True)
-
-    @balance.command(
-        base="balance",
-        name="user",
-        description="Get the balance of a specific user."
-    )
-    @commands.has_permissions(manage_channels=True)
-    async def balance_user(self, context: Context, user: discord.Member):
-        """
-        This is a command to get the balance of a specific user.
-
-        :param context: The application command context.
-        :param user: The user to get the balance from.
-        """
-        async with aiosqlite.connect("database/database.db"):
-            member = context.guild.get_member(user.id) or await context.guild.fetch_member(user.id)
-            balance = await db_manager.get_balance(user.id, context.guild.id)
-            embed = discord.Embed(
-                title="Balance",
-                description=f"{member.mention} has **{balance}** Tokens.",
-                color=0x6930C3
-            )
-            await context.send(embed=embed, ephemeral=True)
 
     @commands.hybrid_command(
         name="level",
@@ -267,6 +154,42 @@ class Interaction(commands.Cog, name="interaction"):
                 except IndexError:
                     break
             await context.send(embed=embed)
+
+    @commands.hybrid_command(
+        name="invites",
+        description="Show the amount of invites you have."
+    )
+    @checks.not_blacklisted()
+    async def invites(self, context: Context):
+        """
+        This is a command to show the amount of invites you have.
+
+        :param context: The application command context.
+        """
+        async with aiosqlite.connect("database/database.db") as db:
+            cur = await db.execute("SELECT normal, left, fake FROM totals WHERE guild_id = ? AND inviter_id = ?",
+                                   (context.guild.id, context.author.id))
+            res = await cur.fetchone()
+            if res is None:
+                embed = discord.Embed(
+                    title="Invites",
+                    description="You have no invites.",
+                    color=0x6930C3
+                )
+                await context.send(embed=embed)
+            else:
+                normal, left, fake = res
+                total = normal - (left + fake)
+                embed = discord.Embed(
+                    title="Invites",
+                    description=f"You have **{total}** invites.\nInvited members left: {left}\nFake accounts invited: {fake}",
+                    color=0x6930C3
+                )
+                await context.send(embed=embed)
+                if fake < 0:
+                    embed.set_footer(
+                        text="For account to count as real it must be at least week old."
+                    )
 
 
 async def setup(bot):

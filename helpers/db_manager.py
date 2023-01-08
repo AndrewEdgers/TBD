@@ -553,3 +553,43 @@ async def drop_participants_table() -> None:
         async with aiosqlite.connect(DATABASE_PATH) as db:
             await db.executescript(schema)
             await db.commit()
+
+
+async def invite_setup(guild_id: int, inviter_id: int, invite_id: int, uses: int) -> None:
+    """
+    This function will add an invite to the database.
+
+    :param guild_id: The ID of the guild.
+    :param inviter_id: The ID of the inviter.
+    :param invite_id: The code of the invite.
+    :param uses: The number of uses of the invite.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("INSERT OR IGNORE INTO invites(guild_id, code, uses) VALUES(?, ?, ?)", (guild_id, invite_id, uses))
+        await db.execute("INSERT OR IGNORE INTO totals(guild_id, inviter_id, normal, left, fake) VALUES(?, ?, ?, ?, ?)", (guild_id, inviter_id, 0, 0, 0))
+        await db.commit()
+
+
+async def invite_create(guild_id: int, inviter_id: int, code: str, uses: int) -> int:
+    """
+    This function will add a use to an invite.
+    :param guild_id: The ID of the guild.
+    :param inviter_id: The ID of the inviter.
+    :param code: The code of the invite.
+    :param uses: The number of uses of the invite.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("INSERT OR IGNORE INTO invites(guild_id, code, uses) VALUES(?, ?, ?)", (guild_id, code, uses))
+        await db.execute("INSERT OR IGNORE INTO totals(guild_id, inviter_id, normal, left, fake) VALUES(?, ?, ?, ?, ?)", (guild_id, inviter_id, uses, 0, 0))
+        await db.commit()
+
+
+async def invite_delete(guild_id: int, code: str) -> int:
+    """
+    This function will add a use to an invite.
+    :param guild_id: The ID of the guild.
+    :param code: The code of the invite.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("DELETE FROM invites WHERE guild_id = ? AND code = ?", (guild_id, code))
+        await db.commit()

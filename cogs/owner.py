@@ -263,7 +263,7 @@ class Owner(commands.Cog, name="owner"):
     @blacklist.command(
         base="blacklist",
         name="show",
-        description="Show the list of all blacklisted users.",
+        description="Shows the list of all blacklisted users.",
     )
     @checks.is_owner()
     async def blacklist_show(self, context: Context) -> None:

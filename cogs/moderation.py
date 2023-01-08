@@ -5,7 +5,7 @@ Description:
 
 Version: 5.4.1
 """
-
+import aiosqlite
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -77,7 +77,8 @@ class Moderation(commands.Cog, name="moderation"):
     @commands.has_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
     @checks.not_blacklisted()
-    @app_commands.describe(user="The user that should have a new nickname.", nickname="The new nickname that should be set.")
+    @app_commands.describe(user="The user that should have a new nickname.",
+                           nickname="The new nickname that should be set.")
     async def nick(self, context: Context, user: discord.User, *, nickname: str = None) -> None:
         """
         Change the nickname of a user on a server.
@@ -213,7 +214,8 @@ class Moderation(commands.Cog, name="moderation"):
     )
     @checks.not_blacklisted()
     @commands.has_permissions(manage_messages=True)
-    @app_commands.describe(user="The user that should get their warning removed.", warn_id="The ID of the warning that should be removed.")
+    @app_commands.describe(user="The user that should get their warning removed.",
+                           warn_id="The ID of the warning that should be removed.")
     async def warning_remove(self, context: Context, user: discord.User, warn_id: int) -> None:
         """
         Warns a user in his private messages.
@@ -274,11 +276,12 @@ class Moderation(commands.Cog, name="moderation"):
         :param context: The hybrid command context.
         :param amount: The number of messages that should be deleted.
         """
-        await context.send("Deleting messages...")  # Bit of a hacky way to make sure the bot responds to the interaction and doens't get a "Unknown Giveaways" response
-        purged_messages = await context.channel.purge(limit=amount+1)
+        await context.send(
+            "Deleting messages...")  # A bit of a hacky way to make sure the bot responds to the interaction and doesn't get an "Unknown Giveaways" response
+        purged_messages = await context.channel.purge(limit=amount + 1)
         embed = discord.Embed(
             title="Chat Cleared!",
-            description=f"**{context.author}** cleared **{len(purged_messages)-1}** messages!",
+            description=f"**{context.author}** cleared **{len(purged_messages) - 1}** messages!",
             color=0x6930C3
         )
         await context.channel.send(embed=embed)
@@ -290,7 +293,8 @@ class Moderation(commands.Cog, name="moderation"):
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     @checks.not_blacklisted()
-    @app_commands.describe(user_id="The user ID that should be banned.", reason="The reason why the user should be banned.")
+    @app_commands.describe(user_id="The user ID that should be banned.",
+                           reason="The reason why the user should be banned.")
     async def hackban(self, context: Context, user_id: str, *, reason: str = "Not specified") -> None:
         """
         Bans a user without the user having to be in the server.
@@ -319,6 +323,110 @@ class Moderation(commands.Cog, name="moderation"):
                 color=0xE02B2B
             )
             await context.send(embed=embed)
+
+    @commands.hybrid_group(
+        name="mbalance",
+        description="Get the balance of a user.",
+    )
+    @commands.has_guild_permissions(manage_messages=True)
+    async def mbalance(self, context: Context) -> None:
+        """
+        Lets you add or remove a user from not being able to use the bot.
+
+        :param context: The hybrid command context.
+        """
+        if context.invoked_subcommand is None:
+            embed = discord.Embed(
+                title="Balance",
+                description="You need to specify a subcommand.\n\n**Subcommands:**\n`add` - Add Tokens to user's balance.\n`remove` - Remove Tokens from user's balance.\n`user` - Check user's Token balance.",
+                color=0xE02B2B
+            )
+            await context.send(embed=embed)
+
+    @mbalance.command(
+        base="mbalance",
+        name="add",
+        description="Add Tokens to a user."
+    )
+    @checks.is_owner()
+    async def mbalance_add(self, context: Context, user: discord.Member, amount: int):
+        """
+        This is a command to add tokens to a user.
+
+        :param context: The application command context.
+        :param user: The user to add tokens to.
+        :param amount: The amount of tokens to add.
+        """
+        async with aiosqlite.connect("database/database.db"):
+            member = context.guild.get_member(user.id) or await context.guild.fetch_member(user.id)
+            total = await db_manager.add_balance(
+                user.id, context.guild.id, amount)
+            embed = discord.Embed(
+                title="Balance",
+                description=f"You have added **{amount}** coins to {member.mention}.\n\n{member.mention} now has **{total}** coins.",
+                color=0x6930C3
+            )
+            await context.send(embed=embed, ephemeral=True)
+            try:
+                await member.send(f"You got **{amount}** Tokens!\nYou now have **{total}** Tokens.")
+            except:
+                # Couldn't send a message in the private messages of the user
+                await context.send(f"{member.mention}, you got **{amount}** Tokens!\nYou now have **{total}** Tokens.",
+                                   ephemeral=True)
+
+    @mbalance.command(
+        base="mbalance",
+        name="remove",
+        description="Remove Tokens from a user."
+    )
+    @checks.is_owner()
+    async def mbalance_remove(self, context: Context, user: discord.Member, amount: int):
+        """
+        This is a command to remove tokens from a user.
+
+        :param context: The application command context.
+        :param user: The user to remove tokens from.
+        :param amount: The amount of tokens to remove.
+        """
+        async with aiosqlite.connect("database/database.db"):
+            member = context.guild.get_member(user.id) or await context.guild.fetch_member(user.id)
+            total = await db_manager.remove_balance(
+                user.id, context.guild.id, amount)
+            embed = discord.Embed(
+                title="Balance",
+                description=f"You have removed **{amount}** coins to {member.mention}.\n\n{member.mention} now has **{total}** coins.",
+                color=0x6930C3
+            )
+            await context.send(embed=embed, ephemeral=True)
+            try:
+                await member.send(f"You got **{amount}** Tokens!\nYou now have **{total}** Tokens.")
+            except:
+                # Couldn't send a message in the private messages of the user
+                await context.send(f"{member.mention}, you got **{amount}** Tokens!\nYou now have **{total}** Tokens.",
+                                   ephemeral=True)
+
+    @mbalance.command(
+        base="mbalance",
+        name="user",
+        description="Get the balance of a specific user."
+    )
+    @commands.has_permissions(manage_channels=True)
+    async def mbalance_user(self, context: Context, user: discord.Member):
+        """
+        This is a command to get the balance of a specific user.
+
+        :param context: The application command context.
+        :param user: The user to get the balance from.
+        """
+        async with aiosqlite.connect("database/database.db"):
+            member = context.guild.get_member(user.id) or await context.guild.fetch_member(user.id)
+            balance = await db_manager.get_balance(user.id, context.guild.id)
+            embed = discord.Embed(
+                title="Balance",
+                description=f"{member.mention} has **{balance}** Tokens.",
+                color=0x6930C3
+            )
+            await context.send(embed=embed, ephemeral=True)
 
 
 async def setup(bot):

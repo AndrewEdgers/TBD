@@ -65,6 +65,8 @@ class General(commands.Cog, name="general"):
                     continue
                 if i.lower() == "moderation":
                     continue
+                if i.lower() == "giveaways":
+                    continue
                 cog = self.bot.get_cog(i.lower())
                 commands = cog.get_commands()
                 data = []

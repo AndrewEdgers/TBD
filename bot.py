@@ -16,10 +16,13 @@ import sys
 import aiosqlite
 import discord
 from discord.ext import commands, tasks
-from discord.ext.commands import Bot, Context
+from discord.ext.commands import Bot, Context, HelpCommand
+from datetime import datetime
 
 import exceptions
-from helpers.db_manager import get_level, add_level, add_balance, get_xp, add_xp, get_balance
+
+from helpers.db_manager import get_level, add_level, add_balance, get_xp, add_xp, invite_setup, invite_create, \
+    invite_delete
 
 if not os.path.isfile(f"{os.path.realpath(os.path.dirname(__file__))}/config.json"):
     sys.exit("'config.json' not found! Please add it and try again.")
@@ -73,7 +76,7 @@ async def status_task() -> None:
     """
     Set up the game status task of the bot
     """
-    statuses = ["Making developer", "Raising error", "Deleting user database..."]
+    statuses = ["Making developer", "Raising error", "Deleting user database...", "Refusing to execute commands"]
     await bot.change_presence(activity=discord.Game(random.choice(statuses)))
 
 
@@ -162,6 +165,78 @@ async def on_message(message: discord.Message) -> None:
             await message.channel.send(embed=embed)
         else:
             await add_xp(author.id, guild.id, xp)
+
+
+async def setup():
+    async with aiosqlite.connect("database/database.db"):
+        for guild in bot.guilds:
+            invites = await guild.invites()
+            for invite in invites:
+                await invite_create(guild.id, invite.inviter.id, invite.id, invite.uses)
+
+
+async def update_totals(member: discord.Member) -> None:
+    """
+    Update the total users and total bots in the database
+    """
+    invites = await member.guild.invites()
+
+    c = datetime.today().strftime('%Y-%m-%d').split('-')
+    c_y = int(c[0])
+    c_m = int(c[1])
+    c_d = int(c[2])
+
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        async with db.execute("SELECT code, uses FROM invites WHERE guild_id = ?", member.guild.id) as cursor:
+            async for invite_id, old_uses in cursor:
+                for invite in invites:
+                    if invite.id == invite_id and invite.uses - old_uses > 0:
+                        if not(c_y == member.created_at.year and c_m == member.created_at.month and c_d - member.created_at.day < 7):
+                            await db.execute("UPDATE invites SET uses = uses + 1 WHERE guild_id = ? AND code = ?",
+                                             (invite.guild.id, invite.id))
+                            await db.execute(
+                                "INSERT OR IGNORE INTO joined (guild_id, inviter_id, joined_id) VALUES (?, ?, ?)",
+                                (invite.guild.id, invite.inviter.id, member.id))
+                            await db.execute("UPDATE totals SET normal = normal + 1 WHERE guild_id = ? AND inviter_id = ?", (invite.guild.id, invite.inviter.id))
+                        else:
+                            await db.execute("UPDATE totals SET normal = normal + 1, fake = fake + 1 WHERE guild_id = ? AND inviter_id = ?", (invite.guild.id, invite.inviter.id))
+
+                        return
+
+
+@bot.event
+async def on_member_join(member: discord.Member) -> None:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await update_totals(member)
+        await db.commit()
+
+
+@bot.event
+async def on_member_remove(member: discord.Member) -> None:
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        cur = await db.execute("SELECT inviter_id FROM joined WHERE guild_id = ? AND joined_id = ?", (member.guild.id, member.id))
+        result = await cur.fetchone()
+        if result is None:
+            return
+
+        inviter_id = result[0]
+
+        await db.execute("DELETE FROM joined WHERE guild_id = ? AND joined = ?", (member.guild.id, member.id))
+        await db.execute("DELETE FROM totals WHERE guild_id = ? AND inviter_id = ?", (member.guild.id, member.id))
+        await db.execute("UPDATE totals SET left = left + 1 WHERE guild_id = ? AND inviter_id = ?", (member.guild.id, inviter_id))
+        await db.commit()
+
+
+@bot.event
+async def on_invite_create(invite: discord.Invite) -> None:
+    async with aiosqlite.connect("database/database.db"):
+        await invite_create(invite.guild.id, invite.inviter.id, invite.id, invite.uses)
+
+
+@bot.event
+async def on_invite_delete(invite: discord.Invite) -> None:
+    async with aiosqlite.connect("database/database.db"):
+        await invite_delete(invite.guild.id, invite.id)
 
 
 @bot.event
