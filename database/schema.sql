@@ -18,8 +18,6 @@ create TABLE IF NOT EXISTS `economy` (
     `balance` int(11) NOT NULL DEFAULT '0'
 );
 
-
-
 create TABLE IF NOT EXISTS `levels`(
     `user_id` varchar(20) NOT NULL,
     `server_id` varchar(20) NOT NULL,

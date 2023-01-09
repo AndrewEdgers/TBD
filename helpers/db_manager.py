@@ -494,7 +494,7 @@ async def get_winners(giveaway_id: int) -> list:
     :return: A list of winners.
     """
     async with aiosqlite.connect(DATABASE_PATH) as db:
-        rows = await db.execute("SELECT user_id FROM participants WHERE giveaway_id=?", (giveaway_id,))
+        rows = await db.execute("SELECT user_id FROM participants WHERE giveaway_id=? AND is_winner=?", (giveaway_id, 0))
         async with rows as cursor:
             result = await cursor.fetchall()
             return result if result is not None else []

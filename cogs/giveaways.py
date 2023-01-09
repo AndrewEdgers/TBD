@@ -30,22 +30,26 @@ async def is_participant(user, giveaway_id):
     return False
 
 
-async def get_winners(giveaway_id, winners):
+async def get_winners(bot, giveaway_id, winners):
     participants = await db_manager.get_participants(giveaway_id)
     winners_list = []
     if winners_list is None:
         return None
     else:
+        print(winners)
         for i in range(winners):
             if len(participants) == 0:
                 break
-            if len(participants) == 1:
+            elif len(participants) == 1:
                 winners_list.append(participants[0])
+                await db_manager.set_winner(giveaway_id, int(participants[0][0]))
                 break
             else:
                 winner = random.choice(participants)
                 participants = [x for x in participants if x != winner]
-                winners_list.append(winner)
+                winners_list.append(winner[0])
+                print(winner[0])
+                await db_manager.set_winner(giveaway_id, winner[0])
 
     provider = await db_manager.get_provider(giveaway_id)
     if provider == '1058058094439039127':
@@ -54,6 +58,13 @@ async def get_winners(giveaway_id, winners):
         guild_id = await db_manager.get_guild_id(giveaway_id)
         participants = await db_manager.get_participants(giveaway_id)
         await db_manager.add_balance(await db_manager.get_provider(giveaway_id), guild_id, len(participants))
+        try:
+            provider = await db_manager.get_provider(giveaway_id), guild_id, len(participants)
+            user = await bot.fetch_user(provider[0])
+            balance = await db_manager.get_balance(user, user.guild.id)
+            await user.send(f"You got **1** Token for 10 users invited!\nYou now have **{balance}** Tokens.")
+        except:
+            pass
         return winners_list
 
 
@@ -71,12 +82,13 @@ class JoinGiveaway(discord.ui.View):
             giveaway = await db_manager.get_giveaway(self.giveaway_id)
             for i in giveaway:
                 giveaway_id = i[0]
-                prize = i[3]
-                winners = i[5]
-                provider = i[6]
-                description = i[7]
+                prize = i[4]
+                winners = i[6]
+                provider = i[7]
+                description = i[8]
 
-            winners_list = await get_winners(giveaway_id, winners)
+            winners_list = await get_winners(self.bot, giveaway_id, winners)
+
             if winners_list is None:
                 return
             elif len(winners_list) == 1:
@@ -85,13 +97,16 @@ class JoinGiveaway(discord.ui.View):
                                                                                                         "").replace(",",
                                                                                                                     "").replace(
                     "]", "")
-                winners_list = "<@" + winners_list
+                winners_list = "<@" + winners_list + ">"
             else:
                 winners_list = [str(t) for t in winners_list]
                 winners_list = [t.replace("(", "").replace(")", ">").replace(",", "").replace("'", "") for t in
                                 winners_list]
-                winners_list = ", <@".join(winners_list)
-                winners_list = "<@" + winners_list
+                winners_list = ">, <@".join(winners_list)
+                winners_list = "<@" + winners_list + ">"
+
+            if winners_list == "<@>":
+                winners_list = "No one :("
 
             embed = discord.Embed(
                 title=f"Giveaway has ended.\n**{prize}**",
@@ -121,7 +136,7 @@ class JoinGiveaway(discord.ui.View):
                 await interaction.response.send_message("You don't have enough Tokens to join this giveaway.",
                                                         ephemeral=True)
                 return
-            if interaction.user.id == await db_manager.get_provider(self.giveaway_id):
+            if interaction.user.id == int(await db_manager.get_provider(self.giveaway_id)):
                 await interaction.response.send_message("You can't join your own giveaway.",
                                                         ephemeral=True)
                 return
@@ -150,7 +165,7 @@ class JoinGiveaway(discord.ui.View):
                 await interaction.response.send_message("You don't have enough Tokens to join this giveaway.",
                                                         ephemeral=True)
                 return
-            if interaction.user.id == await db_manager.get_provider(self.giveaway_id):
+            if interaction.user.id == int(await db_manager.get_provider(self.giveaway_id)):
                 await interaction.response.send_message("You can't join your own giveaway.",
                                                         ephemeral=True)
                 return
@@ -180,7 +195,7 @@ class JoinGiveaway(discord.ui.View):
                 await interaction.response.send_message("You don't have enough Tokens to join this giveaway.",
                                                         ephemeral=True)
                 return
-            if interaction.user.id == await db_manager.get_provider(self.giveaway_id):
+            if interaction.user.id == int(await db_manager.get_provider(self.giveaway_id)):
                 await interaction.response.send_message("You can't join your own giveaway.",
                                                         ephemeral=True)
                 return
@@ -316,7 +331,7 @@ class Giveaways(commands.Cog, name="giveaways"):
                     description="This giveaway doesn't exist.",
                     color=0xE02B2B
                 )
-                await context.send(embed=embed)
+                await context.send(embed=embed, ephemeral=True)
                 return
 
             if finished == 1:
@@ -325,7 +340,7 @@ class Giveaways(commands.Cog, name="giveaways"):
                     description="This giveaway has already been finished.",
                     color=0xE02B2B
                 )
-                await context.send(embed=embed)
+                await context.send(embed=embed, ephemeral=True)
                 return
 
             await db_manager.finish_giveaway(giveaway_id)
@@ -333,7 +348,8 @@ class Giveaways(commands.Cog, name="giveaways"):
             channel = self.bot.get_channel(channel_id)
             message = await channel.fetch_message(message_id)
 
-            winners_list = await get_winners(giveaway_id, winners)
+            winners_list = await get_winners(self.bot, giveaway_id, winners)
+
             if winners_list is None:
                 return
             elif len(winners_list) == 1:
@@ -342,15 +358,15 @@ class Giveaways(commands.Cog, name="giveaways"):
                                                                                                         "").replace(",",
                                                                                                                     "").replace(
                     "]", "")
-                winners_list = "<@" + winners_list
+                winners_list = "<@" + winners_list + ">"
             else:
                 winners_list = [str(t) for t in winners_list]
                 winners_list = [t.replace("(", "").replace(")", ">").replace(",", "").replace("'", "") for t in
                                 winners_list]
-                winners_list = ", <@".join(winners_list)
-                winners_list = "<@" + winners_list
+                winners_list = ">, <@".join(winners_list)
+                winners_list = "<@" + winners_list + ">"
 
-            if winners_list == "<@":
+            if winners_list == "<@>":
                 winners_list = "No one :("
 
             embed = discord.Embed(
@@ -383,7 +399,7 @@ class Giveaways(commands.Cog, name="giveaways"):
                 description="This giveaway doesn't exist.",
                 color=0xE02B2B
             )
-            await context.send(embed=embed)
+            await context.send(embed=embed, ephemeral=True)
             return
         if not await db_manager.is_finished(giveaway_id):
             embed = discord.Embed(
@@ -391,7 +407,7 @@ class Giveaways(commands.Cog, name="giveaways"):
                 description="This giveaway hasn't been finished yet.",
                 color=0xE02B2B
             )
-            await context.send(embed=embed)
+            await context.send(embed=embed, ephemeral=True)
             return
         winners = await db_manager.get_winners(giveaway_id)
 
@@ -403,19 +419,47 @@ class Giveaways(commands.Cog, name="giveaways"):
             )
             await context.send(embed=embed)
             return
-        await db_manager.reroll(giveaway_id)
-        winners = [str(t) for t in winners]
-        winners = [t.replace("(", "").replace(")", ">").replace(",", "").replace("'", "") for t in
-                   winners]
-        winners = ", <@".join(winners)
-        winners = "<@" + winners
-        embed = discord.Embed(
-            title="Giveaway",
-            description="Giveaway has been rerolled.\nNew winner(s):\n" + "".join(winners),
-            color=0x2BE0E0
-        )
-        embed.set_footer(text=f"Giveaway ID: {giveaway_id}")
-        await context.send(embed=embed)
+        async with aiosqlite.connect("database/database.db"):
+            giveaway = await db_manager.get_giveaway(giveaway_id)
+            for i in giveaway:
+                giveaway_id = i[0]
+                message_id = i[1]
+                channel_id = i[2]
+                prize = i[4]
+                winners = i[6]
+            channel_id = int(channel_id)
+            channel = self.bot.get_channel(channel_id)
+            message = await channel.fetch_message(message_id)
+
+            winners_list = await get_winners(self.bot, giveaway_id, winners)
+
+            if winners_list is None:
+                return
+            elif len(winners_list) == 1:
+                winners_list = str(winners_list[0])
+                winners_list = winners_list.replace("[", "").replace("(", "").replace(")", ">").replace("'",
+                                                                                                        "").replace(",",
+                                                                                                                    "").replace(
+                    "]", "")
+                winners_list = "<@" + winners_list
+            else:
+                winners_list = [str(t) for t in winners_list]
+                winners_list = [t.replace("(", "").replace(")", ">").replace(",", "").replace("'", "") for t in
+                                winners_list]
+                winners_list = ">, <@".join(winners_list)
+                winners_list = "<@" + winners_list + ">"
+
+            if winners_list == "<@>":
+                winners_list = "No one :("
+
+            embed = discord.Embed(
+                title=f"Giveaway has been rerolled.\n**{prize}**",
+                description=f"**New winner(s):** {winners_list}>",
+                color=0x2BE0E0
+            )
+            embed.set_footer(text=f"Giveaway ID: {giveaway_id}")
+
+            await message.reply(embed=embed)
 
 
 async def setup(bot):

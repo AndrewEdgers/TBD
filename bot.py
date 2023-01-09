@@ -22,7 +22,7 @@ from datetime import datetime
 import exceptions
 
 from helpers.db_manager import get_level, add_level, add_balance, get_xp, add_xp, invite_setup, invite_create, \
-    invite_delete
+    invite_delete, get_balance
 
 if not os.path.isfile(f"{os.path.realpath(os.path.dirname(__file__))}/config.json"):
     sys.exit("'config.json' not found! Please add it and try again.")
@@ -191,15 +191,34 @@ async def update_totals(member: discord.Member) -> None:
             async for invite_id, old_uses in cursor:
                 for invite in invites:
                     if invite.id == invite_id and invite.uses - old_uses > 0:
-                        if not(c_y == member.created_at.year and c_m == member.created_at.month and c_d - member.created_at.day < 7):
+                        if not (
+                                c_y == member.created_at.year and c_m == member.created_at.month and c_d - member.created_at.day < 7):
                             await db.execute("UPDATE invites SET uses = uses + 1 WHERE guild_id = ? AND code = ?",
                                              (invite.guild.id, invite.id))
                             await db.execute(
                                 "INSERT OR IGNORE INTO joined (guild_id, inviter_id, joined_id) VALUES (?, ?, ?)",
                                 (invite.guild.id, invite.inviter.id, member.id))
-                            await db.execute("UPDATE totals SET normal = normal + 1 WHERE guild_id = ? AND inviter_id = ?", (invite.guild.id, invite.inviter.id))
+                            await db.execute(
+                                "UPDATE totals SET normal = normal + 1 WHERE guild_id = ? AND inviter_id = ?",
+                                (invite.guild.id, invite.inviter.id))
+                            # add 1 Token per 10 normal - (fake + left)
+                            cur = await db.execute(
+                                "SELECT normal, left, fake FROM totals WHERE guild_id = ? AND inviter_id = ?",
+                                (member.guild.id, member.id))
+                            res = await cur.fetchone()
+                            normal, left, fake = res
+                            total = normal - (left + fake)
+                            if total % 10 == 0:
+                                await add_balance(member.id, member.guild.id, 1)
+                                balance = await get_balance(member.id, member.guild.id)
+                                try:
+                                    await member.send(f"You got **1** Token for 10 users invited!\nYou now have **{balance}** Tokens.")
+                                except:
+                                    pass
                         else:
-                            await db.execute("UPDATE totals SET normal = normal + 1, fake = fake + 1 WHERE guild_id = ? AND inviter_id = ?", (invite.guild.id, invite.inviter.id))
+                            await db.execute(
+                                "UPDATE totals SET normal = normal + 1, fake = fake + 1 WHERE guild_id = ? AND inviter_id = ?",
+                                (invite.guild.id, invite.inviter.id))
 
                         return
 
@@ -214,16 +233,18 @@ async def on_member_join(member: discord.Member) -> None:
 @bot.event
 async def on_member_remove(member: discord.Member) -> None:
     async with aiosqlite.connect(DATABASE_PATH) as db:
-        cur = await db.execute("SELECT inviter_id FROM joined WHERE guild_id = ? AND joined_id = ?", (member.guild.id, member.id))
+        cur = await db.execute("SELECT inviter_id FROM joined WHERE guild_id = ? AND joined_id = ?",
+                               (member.guild.id, member.id))
         result = await cur.fetchone()
         if result is None:
             return
 
         inviter_id = result[0]
 
-        await db.execute("DELETE FROM joined WHERE guild_id = ? AND joined = ?", (member.guild.id, member.id))
+        await db.execute("DELETE FROM joined WHERE guild_id = ? AND joined_id = ?", (member.guild.id, member.id))
         await db.execute("DELETE FROM totals WHERE guild_id = ? AND inviter_id = ?", (member.guild.id, member.id))
-        await db.execute("UPDATE totals SET left = left + 1 WHERE guild_id = ? AND inviter_id = ?", (member.guild.id, inviter_id))
+        await db.execute("UPDATE totals SET left = left + 1 WHERE guild_id = ? AND inviter_id = ?",
+                         (member.guild.id, inviter_id))
         await db.commit()
 
 
