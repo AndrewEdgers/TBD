@@ -325,7 +325,7 @@ async def remove_xp(user_id: int, server_id: int, amount: int) -> int:
                 return result[0] if result is not None else 0
 
 
-async def get_leaderboard(server_id: int, limit: int = 10) -> list:
+async def get_level_leaderboard(server_id: int, limit: int = 10) -> list:
     """
     This function will get the leaderboard of a server.
 
@@ -341,7 +341,25 @@ async def get_leaderboard(server_id: int, limit: int = 10) -> list:
             return result if result is not None else []
 
 
-async def add_giveaway(giveaway_id: int, message_id: int, channel_id: int, guild_id: int, prize: str, time: int, winners: int,
+async def get_invite_leaderboard(server_id: int, limit: int = 10) -> list:
+    """
+    This function will get the leaderboard of a server.
+
+    :param server_id: The ID of the server that should be checked.
+    :param limit: The amount of users that should be returned.
+    :return: A list of users.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute(
+            "SELECT inviter_id, normal, leave, fake FROM totals WHERE guild_id=? ORDER BY (normal - (leave + fake)) DESC LIMIT ?",
+            (server_id, limit,))
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return result if result is not None else []
+
+
+async def add_giveaway(giveaway_id: int, message_id: int, channel_id: int, guild_id: int, prize: str, time: int,
+                       winners: int,
                        provider: str, message: str, finished: bool) -> None:
     """
     This function will add a giveaway to the database.
@@ -494,7 +512,8 @@ async def get_winners(giveaway_id: int) -> list:
     :return: A list of winners.
     """
     async with aiosqlite.connect(DATABASE_PATH) as db:
-        rows = await db.execute("SELECT user_id FROM participants WHERE giveaway_id=? AND is_winner=?", (giveaway_id, 0))
+        rows = await db.execute("SELECT user_id FROM participants WHERE giveaway_id=? AND is_winner=?",
+                                (giveaway_id, 0))
         async with rows as cursor:
             result = await cursor.fetchall()
             return result if result is not None else []
@@ -555,22 +574,25 @@ async def drop_participants_table() -> None:
             await db.commit()
 
 
-async def invite_setup(guild_id: int, inviter_id: int, invite_id: int, uses: int) -> None:
-    """
-    This function will add an invite to the database.
+# async def invite_setup(guild_id: int, inviter_id: int, invite_id: int, uses: int) -> None:
+#     """
+#     This function will add an invite to the database.
+#
+#     :param guild_id: The ID of the guild.
+#     :param inviter_id: The ID of the inviter.
+#     :param invite_id: The code of the invite.
+#     :param uses: The number of uses of the invite.
+#     """
+#     async with aiosqlite.connect(DATABASE_PATH) as db:
+#         await db.execute("INSERT OR IGNORE INTO invites(guild_id, code, uses) VALUES(?, ?, ?)",
+#                          (guild_id, invite_id, uses))
+#         await db.execute(
+#             "INSERT OR IGNORE INTO totals(guild_id, inviter_id, normal, leave, fake) VALUES(?, ?, ?, ?, ?)",
+#             (guild_id, inviter_id, 0, 0, 0))
+#         await db.commit()
 
-    :param guild_id: The ID of the guild.
-    :param inviter_id: The ID of the inviter.
-    :param invite_id: The code of the invite.
-    :param uses: The number of uses of the invite.
-    """
-    async with aiosqlite.connect(DATABASE_PATH) as db:
-        await db.execute("INSERT OR IGNORE INTO invites(guild_id, code, uses) VALUES(?, ?, ?)", (guild_id, invite_id, uses))
-        await db.execute("INSERT OR IGNORE INTO totals(guild_id, inviter_id, normal, left, fake) VALUES(?, ?, ?, ?, ?)", (guild_id, inviter_id, 0, 0, 0))
-        await db.commit()
 
-
-async def invite_create(guild_id: int, inviter_id: int, code: str, uses: int) -> int:
+async def invite_create(guild_id: int, inviter_id: int, code: str, uses: int) -> None:
     """
     This function will add a use to an invite.
     :param guild_id: The ID of the guild.
@@ -579,12 +601,15 @@ async def invite_create(guild_id: int, inviter_id: int, code: str, uses: int) ->
     :param uses: The number of uses of the invite.
     """
     async with aiosqlite.connect(DATABASE_PATH) as db:
-        await db.execute("INSERT OR IGNORE INTO invites(guild_id, code, uses) VALUES(?, ?, ?)", (guild_id, code, uses))
-        await db.execute("INSERT OR IGNORE INTO totals(guild_id, inviter_id, normal, left, fake) VALUES(?, ?, ?, ?, ?)", (guild_id, inviter_id, uses, 0, 0))
+        await db.execute("INSERT OR IGNORE INTO invites(guild_id, code, inviter_id, uses) VALUES(?, ?, ?, ?)",
+                         (guild_id, code, inviter_id, uses))
+        await db.execute(
+            "INSERT OR IGNORE INTO totals(guild_id, inviter_id, normal, leave, fake) VALUES(?, ?, ?, ?, ?)",
+            (guild_id, inviter_id, uses, 0, 0))
         await db.commit()
 
 
-async def invite_delete(guild_id: int, code: str) -> int:
+async def invite_delete(guild_id: int, code: str) -> None:
     """
     This function will add a use to an invite.
     :param guild_id: The ID of the guild.
@@ -593,3 +618,127 @@ async def invite_delete(guild_id: int, code: str) -> int:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         await db.execute("DELETE FROM invites WHERE guild_id = ? AND code = ?", (guild_id, code))
         await db.commit()
+
+
+async def invite_use(guild_id: int, inviter_id: int) -> None:
+    """
+    This function will add a use to an invite.
+    :param guild_id: The ID of the guild.
+    :param inviter_id: The ID of the inviter.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("UPDATE invites SET uses = uses + 1 WHERE guild_id = ? AND inviter_id = ?",
+                         (guild_id, inviter_id))
+        await db.execute("UPDATE totals SET normal = normal + 1 WHERE guild_id = ? AND inviter_id = ?",
+                         (guild_id, inviter_id))
+        await db.commit()
+
+
+async def invite_fake(guild_id: int, inviter_id: int) -> None:
+    """
+    This function will add a fake use to an invite.
+    :param guild_id: The ID of the guild.
+    :param inviter_id: The ID of the inviter.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("UPDATE invites SET uses = uses + 1 WHERE guild_id = ? AND inviter_id = ?",
+                         (guild_id, inviter_id))
+        await db.execute("UPDATE totals SET fake = fake + 1 WHERE guild_id = ? AND inviter_id = ?",
+                         (guild_id, inviter_id))
+        await db.commit()
+
+
+async def invite_leave(guild_id: int, inviter_id: int) -> None:
+    """
+    This function will add a leave use to an invite.
+    :param guild_id: The ID of the guild.
+    :param inviter_id: The ID of the inviter.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("UPDATE totals SET leave = leave + 1 WHERE guild_id = ? AND inviter_id = ?",
+                         (guild_id, inviter_id))
+        await db.commit()
+
+
+async def get_normal(guild_id: int, inviter_id: int) -> int:
+    """
+    This function will get the number of normal invites of a member.
+    :param guild_id: The ID of the guild.
+    :param inviter_id: The ID of the inviter.
+    :return: The number of normal invites of the member.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT normal FROM totals WHERE guild_id = ? AND inviter_id = ?",
+                                (guild_id, inviter_id))
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] if result is not None else 0
+
+
+async def get_fake(guild_id: int, inviter_id: int) -> int:
+    """
+    This function will get the number of fake invites of a member.
+    :param guild_id: The ID of the guild.
+    :param inviter_id: The ID of the inviter.
+    :return: The number of fake invites of the member.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT fake FROM totals WHERE guild_id = ? AND inviter_id = ?",
+                                (guild_id, inviter_id))
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] if result is not None else 0
+
+
+async def get_leave(guild_id: int, inviter_id: int) -> int:
+    """
+    This function will get the number of leave invites of a member.
+    :param guild_id: The ID of the guild.
+    :param inviter_id: The ID of the inviter.
+    :return: The number of leave invites of the member.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT leave FROM totals WHERE guild_id = ? AND inviter_id = ?",
+                                (guild_id, inviter_id))
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] if result is not None else 0
+
+
+async def user_joined(guild_id: int, inviter_id, member_id: int) -> None:
+    """
+    This function will add a user to the database.
+    :param guild_id: The ID of the guild.
+    :param inviter_id: The ID of the inviter.
+    :param member_id: The ID of the member.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("INSERT INTO joined(guild_id, inviter_id, member_id) VALUES(?, ?, ?)",
+                         (guild_id, inviter_id, member_id))
+        await db.commit()
+
+
+async def user_left(guild_id: int, member_id: int) -> None:
+    """
+    This function will remove a user from the database.
+    :param guild_id: The ID of the guild.
+    :param member_id: The ID of the member.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        await db.execute("DELETE FROM joined WHERE guild_id = ? AND member_id = ?", (guild_id, member_id))
+        await db.commit()
+
+
+async def get_inviter(guild_id: int, member_id: int) -> int:
+    """
+    This function will get the inviter of a member.
+    :param guild_id: The ID of the guild.
+    :param member_id: The ID of the member.
+    :return: The ID of the inviter.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        rows = await db.execute("SELECT inviter_id FROM joined WHERE guild_id = ? AND member_id = ?",
+                                (guild_id, member_id))
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] if result is not None else None

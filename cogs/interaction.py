@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from helpers import checks, db_manager
-from helpers.db_manager import get_level, get_xp
+from helpers.db_manager import get_level, get_xp, get_normal, get_leave, get_fake
 
 
 class Interaction(commands.Cog, name="interaction"):
@@ -135,24 +135,46 @@ class Interaction(commands.Cog, name="interaction"):
         :param context: The application command context.
         """
         async with aiosqlite.connect("database/database.db"):
-            leaderboard = await db_manager.get_leaderboard(context.guild.id)
-            embed = discord.Embed(
-                title="**Leaderboard**",
-                description="Here is top 10 users of the server.",
+            leaderboard = await db_manager.get_level_leaderboard(context.guild.id)
+            level = discord.Embed(
+                title="**Level Leaderboard**",
+                description="Here is top 10 users of the server based on level.",
                 color=0x6930C3
             )
             for i in range(10):
                 try:
                     member = context.guild.get_member(leaderboard[i][0]) or await context.guild.fetch_member(
                         leaderboard[i][0])
-                    embed.add_field(
+                    level.add_field(
                         name=f"{i + 1}. {member}",
                         value=f"Level: {leaderboard[i][1]}",
                         inline=False
                     )
                 except IndexError:
                     break
-            await context.send(embed=embed)
+                except discord.errors.NotFound:
+                    return await context.send(f"Could not find member with ID {leaderboard[i][0]}", ephemeral=True)
+            leaderboard = await db_manager.get_invite_leaderboard(context.guild.id)
+            invite = discord.Embed(
+                title="**Invite Leaderboard**",
+                description="Here is top 10 users of the server based on invites.",
+                color=0x6930C3
+            )
+            for i in range(10):
+                try:
+                    total = leaderboard[i][1] - (leaderboard[i][2] + leaderboard[i][3])
+                    member = context.guild.get_member(leaderboard[i][1]) or await context.guild.fetch_member(
+                        leaderboard[i][0])
+                    invite.add_field(
+                        name=f"{i + 1}. {member}",
+                        value=f"Invites: {total}",
+                        inline=False
+                    )
+                except IndexError:
+                    break
+                except discord.errors.NotFound:
+                    return await context.send(f"Could not find member with ID {leaderboard[i][1]}", ephemeral=True)
+                await context.send(embeds=[level, invite])
 
     @commands.hybrid_command(
         name="invites",
@@ -165,11 +187,11 @@ class Interaction(commands.Cog, name="interaction"):
 
         :param context: The application command context.
         """
-        async with aiosqlite.connect("database/database.db") as db:
-            cur = await db.execute("SELECT normal, left, fake FROM totals WHERE guild_id = ? AND inviter_id = ?",
-                                   (context.guild.id, context.author.id))
-            res = await cur.fetchone()
-            if res is None:
+        async with aiosqlite.connect("database/database.db"):
+            normal = await get_normal(context.guild.id, context.author.id)
+            left = await get_leave(context.guild.id, context.author.id)
+            fake = await get_fake(context.guild.id, context.author.id)
+            if ((normal and left and fake) == 0) or ((normal and left and fake) is None):
                 embed = discord.Embed(
                     title="Invites",
                     description="You have no invites.",
@@ -177,7 +199,7 @@ class Interaction(commands.Cog, name="interaction"):
                 )
                 await context.send(embed=embed)
             else:
-                normal, left, fake = res
+
                 total = normal - (left + fake)
                 embed = discord.Embed(
                     title="Invites",
