@@ -46,25 +46,26 @@ create TABLE IF NOT EXISTS `participants`(
 );
 
 create TABLE IF NOT EXISTS `totals`(
-    `guild_id` varchar(20) NOT NULL,
+    `guild_id` varchar(20) NOT NULL DEFAULT '1057268363929333800',
     `inviter_id` varchar(20) NOT NULL,
     `normal` int(11) NOT NULL DEFAULT '0',
-    `left` int(11) NOT NULL DEFAULT '0',
+    `leave` int(11) NOT NULL DEFAULT '0',
     `fake` int(11) NOT NULL DEFAULT '0',
     PRIMARY KEY (`guild_id`, `inviter_id`)
 );
 
 create TABLE IF NOT EXISTS `invites`(
-    `guild_id` varchar(20) NOT NULL,
+    `guild_id` varchar(20) NOT NULL DEFAULT '1057268363929333800',
     `code` varchar(20) NOT NULL,
+    `inviter_id` varchar(20) NOT NULL,
     `uses` int(11) NOT NULL DEFAULT '0',
     PRIMARY KEY (`guild_id`, `code`)
 );
 
 create TABLE IF NOT EXISTS `joined`(
-    `guild_id` varchar(20) NOT NULL,
+    `guild_id` varchar(20) NOT NULL DEFAULT '1057268363929333800',
     `inviter_id` varchar(20) NOT NULL,
-    `joined_id` varchar(20) NOT NULL,
-    PRIMARY KEY (`guild_id`, `inviter_id`, `joined_id`)
+    `member_id` varchar(20) NOT NULL,
+    PRIMARY KEY (`guild_id`, `inviter_id`, `member_id`)
 );
 
