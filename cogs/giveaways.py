@@ -36,7 +36,6 @@ async def get_winners(bot, giveaway_id, winners):
     if winners_list is None:
         return None
     else:
-        print(winners)
         for i in range(winners):
             if len(participants) == 0:
                 break
@@ -48,7 +47,6 @@ async def get_winners(bot, giveaway_id, winners):
                 winner = random.choice(participants)
                 participants = [x for x in participants if x != winner]
                 winners_list.append(winner[0])
-                print(winner[0])
                 await db_manager.set_winner(giveaway_id, winner[0])
 
     provider = await db_manager.get_provider(giveaway_id)
@@ -241,8 +239,8 @@ class Giveaways(commands.Cog, name="giveaways"):
     @app_commands.describe(prize="The prize of the giveaway.", duration="The duration of the giveaway.",
                            winners="The number of winners of the giveaway.", provider="The provider of the giveaway.",
                            description="The description of the giveaway.")
-    async def start(self, context: Context, prize: str, duration: str, winners: int, provider: discord.Member,
-                    description: str):
+    async def start(self, context: Context, prize: str, duration: str, winners: int, provider: discord.Member  = None,
+                    description: str = "‎"):
         """
         This command starts a giveaway.
 
@@ -258,6 +256,9 @@ class Giveaways(commands.Cog, name="giveaways"):
         time = humanfriendly.parse_timespan(duration)
         epochEnd = floor(pyTime.time() + time)
         giveaway_id = floor(pyTime.time() * 2)
+        if provider is None:
+            provider = context.guild.get_member(1058058094439039127)
+
         embed = discord.Embed(
             title=f"Giveaway! 🎉\n**{prize}**",
             description=f"{description}\n**Ends **<t:{int(epochEnd)}:R>\n**Total number of winners:** {winners}\n**Provided by:** {provider.mention}",
